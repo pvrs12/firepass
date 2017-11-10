@@ -1,0 +1,24 @@
+{
+	"manifest_version": 2,
+	"background": {
+		"page":"/html/background.html"
+	},
+	"browser_action": {
+		"default_popup": "/html/popup.html",
+		"browser_style": false
+	},
+	"description": "Keepass Password Connector for Firefox",
+	"icons": {
+	},
+	"name": "Fire Pass",
+	"homepage_url": "http://github.com/pvrs12/fire_pass",
+	"permissions": [
+	],
+	"version": "0.0.1",
+	"applications":{
+		"gecko":{
+			"id":"pvrs12_firepass@github.com"
+		}
+	}
+}
+
