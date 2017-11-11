@@ -15,10 +15,10 @@ class KeepassHtml {
     }
 
     static  _base64ToArrayBuffer(base64) {
-        var binary_string =  window.atob(base64);
-        var len = binary_string.length;
-        var bytes = new Uint8Array( len );
-        for (var i = 0; i < len; i++)        {
+        let binary_string =  window.atob(base64);
+        let len = binary_string.length;
+        let bytes = new Uint8Array( len );
+        for (let i = 0; i < len; i++)        {
             bytes[i] = binary_string.charCodeAt(i);
         }
         return bytes.buffer;
@@ -60,6 +60,16 @@ class KeepassHtml {
         );
     }
 
+    async _decrypt_with_key(alg, key, encrypted) {
+        return atob(KeepassHtml._arrayBufferToBase64(
+            await crypto.subtle.decrypt(
+                alg,
+                key,
+                KeepassHtml._base64ToArrayBuffer(encrypted)
+            )
+        ));
+    }
+
     async encrypted_request(type, key, extra_fields, extra_fields_to_encrypt) {
         let nonce = crypto.getRandomValues(new Uint8Array(16));
         let message = KeepassHtml._arrayBufferToBase64(nonce);
@@ -79,9 +89,9 @@ class KeepassHtml {
 
         let encrypted_extra_fields = {};
 
-        for (var field in extra_fields_encrypted) {
-            if (extra_fields_encrypted.hasOwnProperty(field)) {
-                let value = extra_fields_encrypted[field];
+        for (let field in extra_fields_to_encrypt) {
+            if (extra_fields_to_encrypt.hasOwnProperty(field)) {
+                let value = extra_fields_to_encrypt[field];
                 let enc_value = await this._encrypt_with_key(alg, key, value);
                 encrypted_extra_fields[field] = enc_value;
             }
@@ -139,11 +149,29 @@ class KeepassHtml {
         });
     }
 
-    get_logins (url, submit_url) {
+    async get_logins (url, submit_url) {
+        if (submit_url === undefined || submit_url === null){
+            submit_url = url;
+        }
         console.log("Getting logins for '"+url+"'...");
-        this._get_logins(url, submit_url).then((response) => {
-            console.log(response);
-        });
+        let response = await this._get_logins(url, submit_url);
+        let alg = {
+            iv: KeepassHtml._base64ToArrayBuffer(response.Nonce)
+        };
+        Object.assign(alg, ALGO);
+
+        let logins = [];
+        for(let i=0; i<response.Entries.length; ++i){
+            let entry = response.Entries[i];
+
+            let login = await this._decrypt_with_key(alg, this.AESKey, entry.Login);
+            let password = await this._decrypt_with_key(alg, this.AESKey, entry.Password);
+            logins.push ({
+                login: login,
+                password: password
+            });
+        }
+        return logins;
     }
 
     constructor(ls) {

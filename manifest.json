@@ -10,10 +10,14 @@
 	"description": "Keepass Password Connector for Firefox",
 	"icons": {
 	},
+	"content_scripts": [
+		{
+			"matches": ["<all_urls>"],
+			"js": ["/js/fill_password.js"]
+		}
+	],
 	"name": "Fire Pass",
 	"homepage_url": "http://github.com/pvrs12/fire_pass",
-	"permissions": [
-	],
 	"version": "0.0.1",
 	"applications":{
 		"gecko":{
